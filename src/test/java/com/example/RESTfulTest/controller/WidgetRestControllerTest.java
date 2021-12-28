@@ -12,6 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Optional;
@@ -64,8 +65,6 @@ class WidgetRestControllerTest {
                 .andExpect(jsonPath("$[1].version", is(4)));
     }
 
-
-
     @Test
     @DisplayName("GET /rest/widget/1 - Not Found")
     void testGetWidgetByIdNotFound() throws Exception {
@@ -106,6 +105,29 @@ class WidgetRestControllerTest {
                 .andExpect(jsonPath("$.version", is(1)));
     }
 
+    //Solucion pauta GET para obtener un elemento por ID que se encuentra en la "base de datos"
+    @Test
+    @DisplayName("GET /rest/widget/1")
+    void testGetWidgetById() throws Exception {
+        // Setup our mocked service
+        Widget widget1 = new Widget(1l, "Widget Name", "Description", 1);
+        doReturn(Optional.of(widget1)).when(service).findById(1L);
+        // Execute the GET request
+        mockMvc.perform(get("/rest/widget/{id}", 1L))
+                // Validate the response code and content type
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                // Validate headers
+                // Validate headers
+                .andExpect(header().string(HttpHeaders.LOCATION, "/rest/widget/1"))
+                .andExpect(header().string(HttpHeaders.ETAG, "\"1\""))
+
+                // Validate the returned fields
+                .andExpect(jsonPath("$.id", is(1)))
+                .andExpect(jsonPath("$.name", is("Widget Name")))
+                .andExpect(jsonPath("$.description", is("Description")))
+                .andExpect(jsonPath("$.version", is(1)));
+    }
 
     static String asJsonString(final Object obj) {
         try {
